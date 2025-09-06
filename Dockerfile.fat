@@ -1,0 +1,23 @@
+# Dockerfile.fat
+FROM python:3.9-slim
+
+# Системні залежності
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libjpeg-dev \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Створюємо робочу директорію
+WORKDIR /app
+
+# Копіюємо модель і скрипт
+COPY model.pt .
+COPY inference.py .
+COPY imagenet_classes.json .
+
+# Встановлюємо Python-залежності
+RUN pip install --no-cache-dir torch torchvision pillow
+
+# Команда запуску контейнера
+CMD ["python", "inference.py"]
