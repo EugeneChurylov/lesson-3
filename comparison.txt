@@ -17,3 +17,4 @@
 - Видалити torchvision, якщо використовуються тільки torch + власний препроцес.
 - Використати quantization або ONNX Runtime для зменшення ваги бібліотек.
 - Заморозити залежності в `requirements.txt` для відтворюваності.
+git checkout -b lesson-5-6
