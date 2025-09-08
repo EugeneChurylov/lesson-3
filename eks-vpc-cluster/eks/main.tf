@@ -17,22 +17,25 @@ module "eks" {
   enable_cluster_creator_admin_permissions = true
 
   eks_managed_node_groups = {
-    cpu = {
-      instance_types = ["t3.medium"]  # можна t3.small
-      desired_size   = 1
-      min_size       = 1
-      max_size       = 2
-      labels         = { role = "cpu" }
-    }
-    gpu = {
-      instance_types = ["g4dn.xlarge"]
-      desired_size   = 0
-      min_size       = 0
-      max_size       = 1
-      ami_type       = "AL2_x86_64_GPU"
-      labels         = { role = "gpu" }
-    }
+  cpu = {
+    instance_types = ["t3.medium"]  # або "t3.small"
+    desired_size   = 1
+    min_size       = 1
+    max_size       = 2
+    labels         = { role = "cpu" }
   }
+
+  gpu = {
+    # тимчасово робимо звичайну CPU-ноду, просто група зветься "gpu"
+    instance_types = ["t3.small"]
+    desired_size   = 1
+    min_size       = 1
+    max_size       = 1
+    # обов'язково прибери/закоментуй GPU AMI:
+    # ami_type       = "AL2_x86_64_GPU"
+    labels         = { role = "gpu" }
+  }
+}
 
   tags = { Project = var.project }
 }
