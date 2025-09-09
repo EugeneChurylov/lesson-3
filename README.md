@@ -100,3 +100,11 @@ kubectl -n mlflow port-forward svc/mlflow-mlflow 5000:5000
 
 - Основний (Terraform + ArgoCD): https://github.com/EugeneChurylov/lesson-3/tree/lesson-7
 - Helm-чарт + Application: https://github.com/EugeneChurylov/mlops-mlflow-helm
+
+## 8. Скріни
+
+### ArgoCD — Healthy & Synced
+![ArgoCD](./argo.png)
+
+### MLflow UI
+![MLflow](./MLflow.png)
