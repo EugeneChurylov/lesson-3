@@ -1,30 +1,27 @@
-# Базові налаштування сервісів і таймаутів для чарту Argo CD
-global:
-  image:
-    tag: ""  # застосовується дефолт з чарту
+# Мінімальні й безпечні values для чарту argo/argo-cd
+
+global: {}
 
 configs:
+  # Параметри командних аргументів — мають бути РЯДКАМИ
   params:
-    # приклад додаткових аргументів для контролера синків
-    server.insecure: "true"  # для простого демо (UI без TLS за кластером)
+    server.insecure: "true"            # <- рядок!
+  # Вміст argocd-cm — теж тільки РЯДКИ
   cm:
-    timeout.reconciliation: "60s"  # як часто ArgoCD синкає
+    timeout.reconciliation: "60s"       # <- рядок!
 
 server:
+  # простіше залишити дефолтні порти, тільки тип сервісу
   service:
     type: ClusterIP
-    port: 80
-    targetPort: 8080
+
+  # Додаткові аргументи до argocd-server
   extraArgs:
     - --insecure
-  # RBAC приклад (можна розширити під себе)
-  rbacConfig:
-    create: true
-  # Ресурси за потреби
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
+
+  # Приберемо rbacConfig цілком (часто тут помиляються ключами/типами)
+  # rbacConfig:
+  #   create: true
 
 controller:
   resources:
