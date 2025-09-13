@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: minio
+  namespace: infra-tools          # Тут встановлений ArgoCD
+spec:
+  project: default
+  source:
+    repoURL: https://charts.bitnami.com/bitnami
+    chart: minio
+    targetRevision: "*"           # можна зафіксувати версію пізніше
+    helm:
+      parameters:
+        # Робимо зрозумілі DNS-імена сервісів
+        - name: fullnameOverride
+          value: "minio"
+        # Створимо відразу бакет для артефактів MLflow
+        - name: defaultBuckets
+          value: "mlflow-artifacts"
+        # Мінімальна auth-конфігурація (для навчальних цілей)
+        - name: auth.rootUser
+          value: "mlflow"
+        - name: auth.rootPassword
+          value: "mlflow123"      # у проді краще existingSecret
+        # Увімкнемо лише API-сервіс (консоль не обов'язкова)
+        - name: service.ports.api
+          value: "9000"
+        - name: service.type
+          value: "ClusterIP"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mlflow
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
