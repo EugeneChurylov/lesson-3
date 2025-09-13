@@ -5,11 +5,13 @@ metadata:
   namespace: monitoring
 spec:
   namespaceSelector:
-    matchNames: ["monitoring"]
+    matchNames:
+      - monitoring
   selector:
     matchLabels:
-      app.kubernetes.io/name: pushgateway   # дивись, щоб збігався з labels сервісу
+      app.kubernetes.io/name: prometheus-pushgateway
+      app.kubernetes.io/instance: pushgateway
   endpoints:
-    - port: http      # ім'я порту в Service pushgateway (у більшості чартів так і є)
+    - port: http          # у твоєму Service порт має name: http
       path: /metrics
       interval: 15s
