@@ -9,12 +9,18 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import train_test_split
 from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
 
+# === Налаштування ===
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
 PUSHGATEWAY_URL = os.getenv("PUSHGATEWAY_URL", "http://localhost:9091")
+
+# Локальна папка для артефактів
+ARTIFACTS_DIR = os.path.join(os.path.dirname(__file__), "mlruns")
+os.makedirs(ARTIFACTS_DIR, exist_ok=True)
 
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 mlflow.set_experiment("Iris_Experiments")
 
+# ========== Дані ==========
 X, y = load_iris(return_X_y=True)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -43,14 +49,14 @@ for lr in learning_rates:
             mlflow.log_metric("accuracy", acc)
             mlflow.log_metric("loss", loss)
 
-            # збереження моделі як артефакт
-            model_path = f"model_{lr}_{ep}.pkl"
+            # збереження моделі у локальну директорію артефактів
+            model_path = os.path.join(ARTIFACTS_DIR, f"model_{lr}_{ep}.pkl")
             joblib.dump(clf, model_path)
             mlflow.log_artifact(model_path)
 
             print(f"Run {run.info.run_id}: acc={acc:.4f}, loss={loss:.4f}")
 
-            # пуш у pushgateway
+            # пуш у Pushgateway
             registry = CollectorRegistry()
             g_acc = Gauge("mlflow_accuracy", "Model accuracy", ["run_id"], registry=registry)
             g_loss = Gauge("mlflow_loss", "Model loss", ["run_id"], registry=registry)
@@ -62,7 +68,7 @@ for lr in learning_rates:
             if acc > best_accuracy:
                 best_accuracy = acc
                 best_run_id = run.info.run_id
-                best_model_path = "best_model.pkl"
+                best_model_path = os.path.join(ARTIFACTS_DIR, "best_model.pkl")
                 joblib.dump(clf, best_model_path)
                 mlflow.log_artifact(best_model_path, artifact_path="best_model")
 
