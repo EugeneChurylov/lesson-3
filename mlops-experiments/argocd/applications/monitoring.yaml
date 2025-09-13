@@ -9,18 +9,21 @@ spec:
     server: https://kubernetes.default.svc
     namespace: monitoring
   source:
-    repoURL: https://charts.bitnami.com/bitnami
-    chart: kube-prometheus
-    targetRevision: 8.18.1
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 61.7.2   # будь-яка актуальна версія з репо
     helm:
       values: |
-        prometheus:
-          service:
-            type: ClusterIP
         grafana:
-          adminPassword: admin123
+          adminUser: admin
+          adminPassword: admin123   # для демо
           service:
             type: ClusterIP
+        prometheus:
+          prometheusSpec:
+            # дозволяє підхоплювати ServiceMonitor без спеціальних лейблів
+            serviceMonitorSelectorNilUsesHelmValues: false
+            podMonitorSelectorNilUsesHelmValues: false
   syncPolicy:
     automated:
       prune: true
