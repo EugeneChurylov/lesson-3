@@ -22,6 +22,14 @@ spec:
         prometheus:
           enabled: true
           prometheusSpec:
+            replicas: 1
+            resources:
+              requests:
+                memory: 200Mi
+                cpu: 100m
+              limits:
+                memory: 500Mi
+                cpu: 250m
             serviceMonitorSelectorNilUsesHelmValues: false
             podMonitorSelectorNilUsesHelmValues: false
   syncPolicy:

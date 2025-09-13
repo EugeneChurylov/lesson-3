@@ -11,7 +11,7 @@ spec:
   source:
     repoURL: https://github.com/EugeneChurylov/lesson-3.git
     targetRevision: lesson-8-9
-    path: mlops-experiments/argocd/manifests/monitoring
+    path: mlops-experiments/argocd/manifests/monitoring-extras
   syncPolicy:
     automated:
       prune: true
