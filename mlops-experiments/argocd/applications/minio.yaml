@@ -5,25 +5,24 @@ metadata:
   namespace: infra-tools
 spec:
   project: default
-  source:
-    repoURL: https://charts.bitnami.com/bitnami
-    chart: minio
-    targetRevision: "*"
-    helm:
-      parameters:
-        - name: fullnameOverride
-          value: "minio"
-        - name: defaultBuckets
-          value: "mlflow-artifacts"
-        - name: auth.rootUser
-          value: "minio"
-        - name: auth.rootPassword
-          value: "minio123"
-        - name: service.type
-          value: "ClusterIP"
   destination:
     server: https://kubernetes.default.svc
     namespace: mlflow
+  source:
+    chart: oci://registry-1.docker.io/bitnamicharts/minio
+    targetRevision: ">=0.0.0"          # можна залишити діапазон; або постав конкретну версію
+    helm:
+      parameters:
+        - name: fullnameOverride
+          value: minio
+        - name: replicas
+          value: "1"
+        - name: service.type
+          value: ClusterIP
+        - name: buckets[0].name
+          value: mlflow-artifacts
+        - name: buckets[0].forceCreate
+          value: "true"
   syncPolicy:
     automated:
       prune: true

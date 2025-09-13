@@ -5,25 +5,24 @@ metadata:
   namespace: infra-tools
 spec:
   project: default
-  source:
-    repoURL: https://charts.bitnami.com/bitnami
-    chart: postgresql
-    targetRevision: "*"
-    helm:
-      parameters:
-        - name: fullnameOverride
-          value: "postgres"
-        - name: auth.username
-          value: "mlflow"
-        - name: auth.password
-          value: "mlflow123"
-        - name: auth.database
-          value: "mlflow"
-        - name: primary.service.type
-          value: "ClusterIP"
   destination:
     server: https://kubernetes.default.svc
     namespace: mlflow
+  source:
+    chart: oci://registry-1.docker.io/bitnamicharts/postgresql
+    targetRevision: ">=0.0.0"          # або зафіксуй конкретну версію
+    helm:
+      parameters:
+        - name: fullnameOverride
+          value: postgres
+        - name: auth.username
+          value: mlflow
+        - name: auth.password
+          value: mlflow123
+        - name: auth.database
+          value: mlflow
+        - name: primary.service.type
+          value: ClusterIP
   syncPolicy:
     automated:
       prune: true
