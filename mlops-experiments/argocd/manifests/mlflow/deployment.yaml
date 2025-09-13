@@ -15,16 +15,19 @@ spec:
     spec:
       containers:
         - name: mlflow
-          image: ghcr.io/mlflow/mlflow:latest  # або офіційний python:3.9 + pip install mlflow
+          image: ghcr.io/mlflow/mlflow:latest
+          command: ["mlflow"]
           args:
-            - mlflow
             - server
-            - --backend-store-uri=$(BACKEND_STORE_URI)
-            - --default-artifact-root=$(ARTIFACT_ROOT)
             - --host=0.0.0.0
             - --port=5000
+            - --backend-store-uri=sqlite:///mlflow.db
+            - --default-artifact-root=/mlruns
           ports:
             - containerPort: 5000
-          envFrom:
-            - secretRef:
-                name: mlflow-config
+          volumeMounts:
+            - name: mlruns
+              mountPath: /mlruns
+      volumes:
+        - name: mlruns
+          emptyDir: {}
