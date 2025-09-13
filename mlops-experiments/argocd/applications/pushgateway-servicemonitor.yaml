@@ -8,7 +8,8 @@ spec:
     matchNames: ["monitoring"]
   selector:
     matchLabels:
-      app: pushgateway        # має збігатися з labels у Service PushGateway
+      app.kubernetes.io/name: pushgateway   # дивись, щоб збігався з labels сервісу
   endpoints:
-    - port: http              # ім'я порту з Service (якщо у тебе інше — заміни)
+    - port: http      # ім'я порту в Service pushgateway (у більшості чартів так і є)
+      path: /metrics
       interval: 15s

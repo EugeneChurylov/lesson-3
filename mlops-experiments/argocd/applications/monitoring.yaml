@@ -11,19 +11,17 @@ spec:
   source:
     repoURL: https://prometheus-community.github.io/helm-charts
     chart: kube-prometheus-stack
-    targetRevision: "*"           # остання стабільна версія
+    targetRevision: 61.7.2   # будь-яка актуальна версія з репо
     helm:
       values: |
         grafana:
           adminUser: admin
-          adminPassword: admin              # для демо; за бажанням винеси у Secret
+          adminPassword: admin123   # для демо
           service:
             type: ClusterIP
         prometheus:
-          service:
-            type: ClusterIP
           prometheusSpec:
-            # дозволь підхоплювати ServiceMonitor/PodMonitor з будь-якими лейблами
+            # дозволяє підхоплювати ServiceMonitor без спеціальних лейблів
             serviceMonitorSelectorNilUsesHelmValues: false
             podMonitorSelectorNilUsesHelmValues: false
   syncPolicy:

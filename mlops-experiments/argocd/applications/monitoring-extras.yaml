@@ -9,8 +9,8 @@ spec:
     server: https://kubernetes.default.svc
     namespace: monitoring
   source:
-    repoURL: https://github.com/EugeneChurylov/lesson-3.git   # твій репозиторій
-    targetRevision: lesson-8-9                                # твоя гілка
+    repoURL: https://github.com/EugeneChurylov/lesson-3.git
+    targetRevision: lesson-8-9
     path: mlops-experiments/argocd/manifests/monitoring
   syncPolicy:
     automated:
