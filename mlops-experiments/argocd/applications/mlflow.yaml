@@ -6,11 +6,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/<ТВІЙ_ЮЗЕР>/<ТВІЙ_РЕПОЗИТОРІЙ>.git
-    targetRevision: lesson-8-9
-    path: mlops-experiments/argocd/manifests/mlflow
-    directory:
-      recurse: true
+    repoURL: https://github.com/EugeneChurylov/lesson-8-9.git
+    targetRevision: main
+    path: mlops-experiments/manifests/mlflow
   destination:
     server: https://kubernetes.default.svc
     namespace: mlflow

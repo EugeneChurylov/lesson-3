@@ -1,29 +1,25 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: minio
+  name: pushgateway
   namespace: infra-tools
 spec:
   project: default
   source:
-    repoURL: https://charts.bitnami.com/bitnami
-    chart: minio
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: prometheus-pushgateway
     targetRevision: "*"
     helm:
       parameters:
         - name: fullnameOverride
-          value: "minio"
-        - name: defaultBuckets
-          value: "mlflow-artifacts"
-        - name: auth.rootUser
-          value: "minio"
-        - name: auth.rootPassword
-          value: "minio123"
+          value: "pushgateway"
         - name: service.type
           value: "ClusterIP"
+        - name: service.port
+          value: "9091"
   destination:
     server: https://kubernetes.default.svc
-    namespace: mlflow
+    namespace: monitoring
   syncPolicy:
     automated:
       prune: true
