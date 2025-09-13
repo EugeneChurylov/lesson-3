@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/EugeneChurylov/lesson-3.git
     targetRevision: lesson-8-9
-    path: mlops-experiments/manifests/mlflow
+    path: mlops-experiments/argocd/manifests/mlflow
   destination:
     server: https://kubernetes.default.svc
     namespace: mlflow
