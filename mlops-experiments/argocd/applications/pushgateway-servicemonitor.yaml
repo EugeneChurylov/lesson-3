@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: pushgateway
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    matchNames: ["monitoring"]
+  selector:
+    matchLabels:
+      app: pushgateway        # має збігатися з labels у Service PushGateway
+  endpoints:
+    - port: http              # ім'я порту з Service (якщо у тебе інше — заміни)
+      interval: 15s
