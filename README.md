@@ -169,16 +169,16 @@ serviceMonitor/monitoring/pushgateway/0 (1/1 up)
 ![Prometheus_targets](screenshots/Targets_pushgateaway.png)
 
 ### Grafana Accuracy
-![Grafana Accuracy](/Users/eugenechurylov/Desktop/lesson-3/screenshots/mlflow_accuracy.png)
+![Grafana Accuracy](screenshots/mlflow_accuracy.png)
 
 ### Grafana Loss
-![Grafana Loss](/Users/eugenechurylov/Desktop/lesson-3/screenshots/mlflow_loss.png)
+![Grafana Loss](screenshots/mlflow_loss.png)
 
 ## mlflow_UI
-![mlflow_UI](/Users/eugenechurylov/Desktop/lesson-3/screenshots/mlflow_UI.png)
+![mlflow_UI](screenshots/mlflow_UI.png)
 
 ## mlflow_UI_2
-![mlflow_UI_2](/Users/eugenechurylov/Desktop/lesson-3/screenshots/mlflow_UI_2.png)
+![mlflow_UI_2](screenshots/mlflow_UI_2.png)
 
 ## Готовність ДЗ
 
