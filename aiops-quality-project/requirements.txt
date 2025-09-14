@@ -1,0 +1,6 @@
+fastapi==0.112.0
+uvicorn==0.30.6
+prometheus-client==0.20.0
+pydantic==2.8.2
+joblib==1.4.2
+prometheus-fastapi-instrumentator==6.1.0

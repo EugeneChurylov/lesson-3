@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: aiops-api
+  namespace: monitoring
+  labels:
+    release: kps        # обовʼязково, щоб Prometheus з kube-prom-stack підхопив
+spec:
+  namespaceSelector:
+    matchNames:
+      - aiops           # де живе твій сервіс
+  selector:
+    matchLabels:
+      app: aiops-api    # збігається з labels сервісу aiops-api
+  endpoints:
+    - port: http        # збігається з .spec.ports[].name у Service (у тебе "http")
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
