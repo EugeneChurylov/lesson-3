@@ -166,7 +166,7 @@ serviceMonitor/monitoring/pushgateway/0 (1/1 up)
 ## 6) Screenshots
 
 ### Prometheus Targets
-![Prometheus_targets](/Users/eugenechurylov/Desktop/lesson-3/screenshots/Targets_pushgateaway.png)
+![Prometheus_targets](screenshots/Targets_pushgateaway.png)
 
 ### Grafana Accuracy
 ![Grafana Accuracy](/Users/eugenechurylov/Desktop/lesson-3/screenshots/mlflow_accuracy.png)
