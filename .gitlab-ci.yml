@@ -1,4 +1,5 @@
-stages: [train]
+stages:
+  - train
 
 variables:
   AWS_DEFAULT_REGION: "eu-central-1"
@@ -10,12 +11,7 @@ train-model:
     - if: '$CI_PIPELINE_SOURCE == "push"'
   script:
     - echo "AWS CLI:" && aws --version
-    - echo "Region: $AWS_DEFAULT_REGION"
-    - echo "SFN ARN: $SFN_ARN"
+    - echo "Region: ${AWS_DEFAULT_REGION:-not-set}"
+    - echo "SFN ARN: ${SFN_ARN:-not-set}"
     - echo "Commit: $CI_COMMIT_SHORT_SHA"
-    - |
-      aws stepfunctions start-execution \
-        --region "$AWS_DEFAULT_REGION" \
-        --state-machine-arn "$SFN_ARN" \
-        --name "train-$(date +%s)" \
-        --input "{\"source\":\"gitlab-ci\",\"commit\":\"$CI_COMMIT_SHORT_SHA\"}"
+    - aws stepfunctions start-execution --region "$AWS_DEFAULT_REGION" --state-machine-arn "$SFN_ARN" --name "train-$(date +%s)" --input "{\"source\":\"gitlab-ci\",\"commit\":\"$CI_COMMIT_SHORT_SHA\"}"
