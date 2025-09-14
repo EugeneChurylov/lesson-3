@@ -15,7 +15,6 @@ venv/
 .ipynb_checkpoints/
 
 # ML artifacts
-*.pkl
 *.h5
 *.onnx
 *.joblib
