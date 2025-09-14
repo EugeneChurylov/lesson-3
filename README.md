@@ -1,93 +1,136 @@
-# MLOps Train Automation (Terraform + Step Functions + Lambda + GitLab CI)
+# MLOps Train Automation
 
-This repo provisions a two-step training pipeline on AWS and triggers it from GitLab CI.
+Цей проєкт демонструє автоматизацію процесу тренування моделей за допомогою **AWS Step Functions**, **AWS Lambda**, **Terraform** та **GitLab CI**.
 
-## Prerequisites
-- Terraform >= 1.5
-- AWS account & IAM permissions to create: IAM roles/policies, Lambda, Step Functions
-- AWS CLI configured locally (for manual tests)
-- GitLab project with CI minutes
+---
 
-## 1) Build Lambda archives
+## 📂 Структура проєкту
+
+```
+mlops-train-automation/
+├── terraform/
+│   ├── main.tf
+│   ├── variables.tf
+│   └── lambda/
+│       ├── validate.py
+│       ├── log_metrics.py
+│       ├── validate.zip
+│       └── log_metrics.zip
+├── .gitlab-ci.yml
+├── README.md
+```
+
+---
+
+## 🐍 Lambda-функції
+
+У папці `terraform/lambda/` є дві функції:
+
+- **validate.py** – умовна валідація даних (`print("Validating data...")`)
+- **log_metrics.py** – умовний лог метрик (`print("Logging metrics...")`)
+
+### Збірка архівів
 ```bash
 cd terraform/lambda
-zip -r validate.zip validate.py
-zip -r log_metrics.zip log_metrics.py
-````
-
-> Rebuild the zips whenever you change the code.
-
-## 2) Deploy infrastructure with Terraform
-
-```bash
-cd terraform
-terraform init
-terraform apply \
-  -var="project_name=mlops-train-automation" \
-  -var="aws_region=eu-central-1"
+zip validate.zip validate.py
+zip log_metrics.zip log_metrics.py
 ```
 
-Terraform output will include the **state\_machine\_arn**. Copy it for later (also visible in AWS Console).
+---
 
-## 3) Manual test of the Step Function
+## ☁️ Розгортання інфраструктури через Terraform
 
-* **Console**: AWS Console → Step Functions → your state machine → *Start execution* → paste JSON input (see below) → Start.
-* **CLI**:
+1. Перейти у директорію:
+   ```bash
+   cd terraform
+   ```
+2. Ініціалізувати Terraform:
+   ```bash
+   terraform init
+   ```
+3. Застосувати конфігурацію:
+   ```bash
+   terraform apply -auto-approve
+   ```
+4. Отримати ARN state machine:
+   ```bash
+   terraform output state_machine_arn
+   ```
+
+---
+
+## ▶️ Ручний запуск Step Function
 
 ```bash
-aws stepfunctions start-execution \
-  --state-machine-arn <YOUR_SFN_ARN> \
-  --name "manual-$(date +%s)" \
-  --input '{"source":"manual","commit":"local-test"}'
+SFN_ARN="<ARN_З_TERRAFORM_OUTPUT>"
+
+aws stepfunctions start-execution   --region eu-central-1   --state-machine-arn "$SFN_ARN"   --name "manual-$(date +%s)"   --input '{"source":"manual","commit":"local-test"}'
 ```
 
-### Example JSON input
+---
+
+## 🤖 GitLab CI
+
+Файл `.gitlab-ci.yml` містить job `train-model`, який автоматично запускає Step Function при кожному push у `main`.
+
+### Приклад job:
+```yaml
+train-model:
+  stage: train
+  image: amazon/aws-cli:2.15.0
+  script:
+    - aws stepfunctions start-execution         --region "$AWS_DEFAULT_REGION"         --state-machine-arn "$SFN_ARN"         --name "train-$(date +%s)"         --input "{\"source\":\"gitlab-ci\",\"commit\":\"$CI_COMMIT_SHORT_SHA\"}"
+```
+
+### Необхідні змінні в GitLab CI/CD Settings:
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_DEFAULT_REGION=eu-central-1`
+- `SFN_ARN=<ARN state machine з Terraform>`
+
+---
+
+## 📦 Приклад JSON, який передається в Step Function
+
+Через GitLab CI до state machine передається JSON:
 
 ```json
 {
   "source": "gitlab-ci",
-  "commit": "abc123"
+  "commit": "a1b2c3d4"
 }
 ```
 
-## 4) GitLab CI
+- `source` — завжди `"gitlab-ci"`
+- `commit` — короткий SHA коміту (`$CI_COMMIT_SHORT_SHA`)
 
-This pipeline uses the official AWS CLI image and starts the Step Function on each push.
+---
 
-### Variables to set in GitLab → Settings → CI/CD → Variables
+## 🔍 Перевірка
 
-* `SFN_ARN` – ARN of the Step Functions state machine (Terraform output)
-* `AWS_DEFAULT_REGION` – e.g. `eu-central-1`
+1. В AWS Console → Step Functions → обрати state machine → перевірити вкладку **Executions**.  
+2. Там видно Input (JSON) і статус виконання.  
+3. Логи обох Lambda доступні у **CloudWatch Logs**.
 
-**Auth option A (Access Keys):**
+---
 
-* `AWS_ACCESS_KEY_ID`
-* `AWS_SECRET_ACCESS_KEY`
+## Screenshots
 
-**Auth option B (OIDC, recommended):**
+### GitLab Pipeline
+![GitLab Pipeline](screenshots/CI.png)
 
-* `AWS_ROLE_ARN` – an IAM role in your AWS account trusted for your GitLab OIDC provider
-* Enable CI Job Token (`CI_JOB_JWT`) in GitLab (default on)
+### AWS Step Function
+![Step Function](screenshots/AWS1.png)
 
-On push, GitLab will run `train-model` and call `aws stepfunctions start-execution` with a JSON payload containing the commit SHA.
+### AWS Step Function – Graph view
+![Step Function Graph](screenshots/AWS2.png)
 
-## Architecture
+### AWS Step Function – Event view
+![Step Function Events](screenshots/AWS3.png)
 
-* **Lambda: validate → log\_metrics**
-* **Step Functions** orchestrates sequential tasks
-* **Terraform** fully describes IAM, Lambda, and the state machine
-* **GitLab CI** triggers the pipeline per push with input parameters
-
-## Clean up
-
-```bash
-cd terraform
-terraform destroy
-```
-
-## Notes
-
-* You can extend the pipeline by adding more Lambda tasks (e.g., `prepare_data`, `train_model`, `register_model`) and chaining them in the state machine definition.
-
-```
-```
+✅ Таким чином:  
+- Є Step Function з двома кроками (ValidateData → LogMetrics).  
+- Lambda-функції і zip-архіви у `terraform/lambda`.  
+- Terraform описує IAM ролі, Lambda і Step Function.  
+- GitLab CI викликає state machine через AWS CLI.  
+- README містить всі інструкції і приклад JSON.  
