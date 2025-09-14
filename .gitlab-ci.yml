@@ -21,8 +21,8 @@ retrain-model:
   stage: train
   script:
     - echo "Start retrain"
-    - python model/train.py
-    - ls -lh model/
+    - python aiops-quality-project/model/train.py
+    - ls -lh aiops-quality-project/model
   artifacts:
     when: always
     paths:
