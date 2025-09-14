@@ -1,41 +1,72 @@
-stages: [retrain, build, deploy]
+stages:
+  - test
+  - train
+  - deploy
 
-variables:
-  IMAGE: $CI_REGISTRY_IMAGE/aiops-api
-  TAG: $CI_COMMIT_SHORT_SHA
+default:
+  image: python:3.12-slim
+  before_script:
+    - python --version
+    - pip install --no-cache-dir -r requirements.txt || true
 
-retrain:
-  stage: retrain
-  image: python:3.11
+# ------------- tests -------------
+unit-tests:
+  stage: test
   script:
-    - pip install -r requirements.txt
-    - python model/train.py            # згенерить model/model.pkl
+    - echo "No tests yet; add pytest later"
+    - python -c "print('smoke ok')"
+
+# ------------- retrain -------------
+retrain-model:
+  stage: train
+  script:
+    - echo "Start retrain"
+    - python model/train.py
+    - ls -lh model/
   artifacts:
+    when: always
     paths:
       - model/model.pkl
+    expire_in: 7 days
 
-build:
-  stage: build
-  image: docker:24.0.5
-  services: [docker:24.0.5-dind]
-  script:
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" $CI_REGISTRY --password-stdin
-    - docker build -t $IMAGE:$TAG .
-    - docker push $IMAGE:$TAG
-  needs: ["retrain"]
-
+# ------------- deploy / trigger -------------
+# ВАРІАНТ А: якщо хочеш викликати AWS Step Functions (опційно)
 deploy:
   stage: deploy
-  image: alpine:3.20
-  before_script:
-    - apk add --no-cache git yq
-    - git config --global user.email "ci@example.com"
-    - git config --global user.name "gitlab-ci"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: on_success
+    - when: manual
   script:
-    # оновлюємо версію іміджа в Helm values і комітимо
-    - yq -i ".image.tag = \"$TAG\"" charts/aiops-api/values.yaml
-    - yq -i ".image.repository = \"$IMAGE\"" charts/aiops-api/values.yaml
-    - git add charts/aiops-api/values.yaml
-    - git commit -m "chore: bump image to $IMAGE:$TAG [skip ci]" || true
-    - git push origin $CI_COMMIT_REF_NAME
-  needs: ["build"]
+    - pip install --no-cache-dir awscli==1.32.0
+    - echo "region=$AWS_DEFAULT_REGION sfn=$SFN_ARN sha=$CI_COMMIT_SHORT_SHA"
+    - |
+      if [ -n "$SFN_ARN" ]; then
+        aws stepfunctions start-execution \
+          --region "$AWS_DEFAULT_REGION" \
+          --state-machine-arn "$SFN_ARN" \
+          --name "train-$(date +%s)" \
+          --input "{\"source\":\"gitlab-ci\",\"commit\":\"$CI_COMMIT_SHORT_SHA\"}"
+      else
+        echo "SFN_ARN is empty -> skipping AWS Step Functions trigger"
+      fi
+
+# ---- ВАРІАНТ B (альтернативний): тригер іншого пайплайна GitLab (замість AWS) ----
+# trigger-retrain:
+#   stage: deploy
+#   rules:
+#     - if: '$CI_COMMIT_BRANCH == "main"'
+#       when: on_success
+#   image: curlimages/curl:8.8.0
+#   script:
+#     - |
+#       if [ -z "$TRIGGER_TOKEN" ] || [ -z "$PROJECT_ID" ]; then
+#         echo "TRIGGER_TOKEN/PROJECT_ID not set; skipping"
+#         exit 0
+#       fi
+#     - |
+#       curl -sS -X POST \
+#         -F token="$TRIGGER_TOKEN" \
+#         -F ref="main" \
+#         -F "variables[CAUSE]=drift" \
+#         "https://gitlab.com/api/v4/projects/${PROJECT_ID}/trigger/pipeline"
