@@ -1,21 +1,19 @@
-kubectl apply -f - <<'YAML'
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: aiops-api
   namespace: monitoring
   labels:
-    release: kps            # важливо: має збігатися з ім’ям релізу kube-prometheus-stack (kps)
+    release: kps        # обовʼязково, щоб Prometheus з kube-prom-stack підхопив
 spec:
   namespaceSelector:
     matchNames:
-      - aiops
+      - aiops           # де живе твій сервіс
   selector:
     matchLabels:
-      app: aiops-api        # такий самий лейбл є у Service/Deployment
+      app: aiops-api    # збігається з labels сервісу aiops-api
   endpoints:
-    - port: http            # НАЗВА порту у Service (в нас у Helm — name: http)
+    - port: http        # збігається з .spec.ports[].name у Service (у тебе "http")
       path: /metrics
       interval: 15s
-      scheme: http
-YAML
+      scrapeTimeout: 10s
