@@ -7,12 +7,15 @@ train-model:
   stage: train
   image: amazon/aws-cli:2.15.0
   rules:
-    - if: "$CI_PIPELINE_SOURCE == 'push'"
-  before_script:
-    - 'echo "AWS CLI:" && aws --version'
-    - 'echo "Region: ${AWS_DEFAULT_REGION:-not-set}"'
-    - 'test -n "$SFN_ARN" || (echo "SFN_ARN variable is required" && exit 1)'
-    - 'test -n "$AWS_ACCESS_KEY_ID" || (echo "AWS_ACCESS_KEY_ID not set" && exit 1)'
-    - 'test -n "$AWS_SECRET_ACCESS_KEY" || (echo "AWS_SECRET_ACCESS_KEY not set" && exit 1)'
+    - if: '$CI_PIPELINE_SOURCE == "push"'
   script:
-    - 'aws stepfunctions start-execution --region "$AWS_DEFAULT_REGION" --state-machine-arn "$SFN_ARN" --name "train-$(date +%s)" --input "{\"source\":\"gitlab-ci\",\"commit\":\"$CI_COMMIT_SHORT_SHA\"}"'
+    - echo "AWS CLI:" && aws --version
+    - echo "Region: $AWS_DEFAULT_REGION"
+    - echo "SFN ARN: $SFN_ARN"
+    - echo "Commit: $CI_COMMIT_SHORT_SHA"
+    - |
+      aws stepfunctions start-execution \
+        --region "$AWS_DEFAULT_REGION" \
+        --state-machine-arn "$SFN_ARN" \
+        --name "train-$(date +%s)" \
+        --input "{\"source\":\"gitlab-ci\",\"commit\":\"$CI_COMMIT_SHORT_SHA\"}"
