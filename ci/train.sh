@@ -1,7 +1,12 @@
-set -euo pipefail
-set -x
+#!/bin/sh
+set -eu
 
+# Діагностика оточення (не друкує секрети)
 aws --version
+aws configure list
+aws sts get-caller-identity
+
+# Пуск Step Functions
 aws stepfunctions start-execution \
   --region "${AWS_DEFAULT_REGION}" \
   --state-machine-arn "${SFN_ARN}" \
