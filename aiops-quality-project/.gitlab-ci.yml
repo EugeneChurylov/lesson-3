@@ -1,0 +1,41 @@
+stages: [retrain, build, deploy]
+
+variables:
+  IMAGE: $CI_REGISTRY_IMAGE/aiops-api
+  TAG: $CI_COMMIT_SHORT_SHA
+
+retrain:
+  stage: retrain
+  image: python:3.11
+  script:
+    - pip install -r requirements.txt
+    - python model/train.py            # згенерить model/model.pkl
+  artifacts:
+    paths:
+      - model/model.pkl
+
+build:
+  stage: build
+  image: docker:24.0.5
+  services: [docker:24.0.5-dind]
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" $CI_REGISTRY --password-stdin
+    - docker build -t $IMAGE:$TAG .
+    - docker push $IMAGE:$TAG
+  needs: ["retrain"]
+
+deploy:
+  stage: deploy
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache git yq
+    - git config --global user.email "ci@example.com"
+    - git config --global user.name "gitlab-ci"
+  script:
+    # оновлюємо версію іміджа в Helm values і комітимо
+    - yq -i ".image.tag = \"$TAG\"" charts/aiops-api/values.yaml
+    - yq -i ".image.repository = \"$IMAGE\"" charts/aiops-api/values.yaml
+    - git add charts/aiops-api/values.yaml
+    - git commit -m "chore: bump image to $IMAGE:$TAG [skip ci]" || true
+    - git push origin $CI_COMMIT_REF_NAME
+  needs: ["build"]
