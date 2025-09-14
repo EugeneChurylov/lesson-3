@@ -1,0 +1,22 @@
+image:
+  repository: your-docker-user/aiops-api   # ← заміни на свій репозиторій
+  tag: "v0.1.0"
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+env:
+  - name: MODEL_PATH
+    value: "/app/model/model.pkl"
+  - name: REF_STATS_PATH
+    value: "/app/model/ref_stats.json"
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: "/metrics"
+  prometheus.io/port: "8000"

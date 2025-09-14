@@ -1,0 +1,30 @@
+# aiops-quality-project/argocd/application.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aiops-api
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/EugeneChurylov/lesson-3.git
+    # ВАЖЛИВО: path = шлях до папки helm ВІД КОРЕНЯ РЕПО
+    # якщо у тебе репозиторій вже на рівні aiops-quality-project/,
+    # то path: helm; якщо ж helm лежить глибше — вкажи повний відносний шлях
+    path: aiops-quality-project/helm
+    targetRevision: final-project        # або main — підстав свою гілку
+    helm:
+      parameters:
+        - name: image.repository
+          value: aiops-api           # той самий локальний тег, який ти завантажив у kind
+        - name: image.tag
+          value: local
+        - name: image.pullPolicy
+          value: IfNotPresent
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: aiops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
