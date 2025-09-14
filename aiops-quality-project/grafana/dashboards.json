@@ -1,0 +1,88 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "11.x" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "2.x" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" }
+  ],
+  "title": "AIOps API",
+  "tags": ["aiops", "fastapi", "mlops"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "QPS (last 5m)",
+      "gridPos": { "x": 0, "y": 0, "w": 8, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "sum(rate(inference_requests_total[5m]))", "legendFormat": "QPS", "refId": "A" }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "horizontal" }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Requests per minute (rate)",
+      "gridPos": { "x": 8, "y": 0, "w": 16, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "rate(inference_requests_total[5m])", "legendFormat": "requests/s", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "options": { "legend": { "showLegend": true }, "tooltip": { "mode": "single" } }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Latency p95 (seconds)",
+      "gridPos": { "x": 0, "y": 6, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(inference_latency_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "options": { "legend": { "showLegend": true }, "tooltip": { "mode": "single" } }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Latency p50 / p99 (seconds)",
+      "gridPos": { "x": 12, "y": 6, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(inference_latency_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(inference_latency_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p99",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "options": { "legend": { "showLegend": true }, "tooltip": { "mode": "multi" } }
+    }
+  ],
+  "templating": { "list": [] },
+  "time": { "from": "now-15m", "to": "now" }
+}
