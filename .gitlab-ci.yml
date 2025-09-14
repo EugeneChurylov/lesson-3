@@ -11,24 +11,11 @@ train-model:
   rules:
     - if: "$CI_PIPELINE_SOURCE == 'push'"
   before_script:
-    # If using OIDC, assume role. Otherwise, skip and rely on access keys.
-    - |
-      if [ -n "$AWS_ROLE_ARN" ]; then
-        echo "Using OIDC to assume role: $AWS_ROLE_ARN"
-        CREDS=$(aws sts assume-role-with-web-identity \
-          --role-arn "$AWS_ROLE_ARN" \
-          --role-session-name "gitlab-ci-$CI_COMMIT_SHORT_SHA" \
-          --web-identity-token "$CI_JOB_JWT" \
-          --duration-seconds 3600)
-        export AWS_ACCESS_KEY_ID=$(echo $CREDS | jq -r .Credentials.AccessKeyId)
-        export AWS_SECRET_ACCESS_KEY=$(echo $CREDS | jq -r .Credentials.SecretAccessKey)
-        export AWS_SESSION_TOKEN=$(echo $CREDS | jq -r .Credentials.SessionToken)
-      else
-        echo "Using long-lived keys from CI variables"
-      fi
+    - echo "AWS CLI:" && aws --version
+    - echo "Region: ${AWS_DEFAULT_REGION:-not-set}"
+    - test -n "$SFN_ARN" || (echo "SFN_ARN variable is required" && exit 1)
+    - test -n "$AWS_ACCESS_KEY_ID" || (echo "AWS_ACCESS_KEY_ID not set" && exit 1)
+    - test -n "$AWS_SECRET_ACCESS_KEY" || (echo "AWS_SECRET_ACCESS_KEY not set" && exit 1)
   script:
-    - test -n "$SFN_ARN" || { echo "SFN_ARN variable is required"; exit 1; }
-    - aws stepfunctions start-execution \
-        --state-machine-arn "$SFN_ARN" \
-        --name "train-$(date +%s)" \
-        --input "{\"source\":\"gitlab-ci\",\"commit\":\"$CI_COMMIT_SHORT_SHA\"}"
+    - aws stepfunctions start-execution --region "$AWS_DEFAULT_REGION" --state-machine-arn "$SFN_ARN" --name "train-$(date +%s)" --input "{\"source\":\"gitlab-ci\",\"commit\":\"$CI_COMMIT_SHORT_SHA\"}"
+
