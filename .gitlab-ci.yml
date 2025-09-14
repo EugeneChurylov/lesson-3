@@ -1,10 +1,18 @@
 stages:
-  - debug
+  - train
 
-debug-cli:
-  stage: debug
+variables:
+  AWS_DEFAULT_REGION: eu-central-1
+
+train-model:
+  stage: train
   image: amazon/aws-cli:2.15.0
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
   script:
-    - aws --version
-    - aws help | head -20
-    - aws stepfunctions help | head -20
+    - echo "PWD=$(pwd)"
+    - ls -la
+    - echo "--- cat -A ci/train.sh ---"
+    - cat -A ci/train.sh
+    - echo "--- running with /bin/sh -x ---"
+    - /bin/sh -x ci/train.sh
