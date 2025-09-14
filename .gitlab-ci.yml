@@ -1,9 +1,7 @@
 stages: [train]
 
 variables:
-  AWS_DEFAULT_REGION: "eu-central-1"   # override in CI settings if needed
-  # Option A (classic keys): set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in GitLab CI variables
-  # Option B (OIDC): set AWS_ROLE_ARN and configure OpenID Connect in your AWS account
+  AWS_DEFAULT_REGION: "eu-central-1"
 
 train-model:
   stage: train
@@ -11,11 +9,10 @@ train-model:
   rules:
     - if: "$CI_PIPELINE_SOURCE == 'push'"
   before_script:
-    - echo "AWS CLI:" && aws --version
-    - echo "Region: ${AWS_DEFAULT_REGION:-not-set}"
-    - test -n "$SFN_ARN" || (echo "SFN_ARN variable is required" && exit 1)
-    - test -n "$AWS_ACCESS_KEY_ID" || (echo "AWS_ACCESS_KEY_ID not set" && exit 1)
-    - test -n "$AWS_SECRET_ACCESS_KEY" || (echo "AWS_SECRET_ACCESS_KEY not set" && exit 1)
+    - 'echo "AWS CLI:" && aws --version'
+    - 'echo "Region: ${AWS_DEFAULT_REGION:-not-set}"'
+    - 'test -n "$SFN_ARN" || (echo "SFN_ARN variable is required" && exit 1)'
+    - 'test -n "$AWS_ACCESS_KEY_ID" || (echo "AWS_ACCESS_KEY_ID not set" && exit 1)'
+    - 'test -n "$AWS_SECRET_ACCESS_KEY" || (echo "AWS_SECRET_ACCESS_KEY not set" && exit 1)'
   script:
-    - aws stepfunctions start-execution --region "$AWS_DEFAULT_REGION" --state-machine-arn "$SFN_ARN" --name "train-$(date +%s)" --input "{\"source\":\"gitlab-ci\",\"commit\":\"$CI_COMMIT_SHORT_SHA\"}"
-
+    - 'aws stepfunctions start-execution --region "$AWS_DEFAULT_REGION" --state-machine-arn "$SFN_ARN" --name "train-$(date +%s)" --input "{\"source\":\"gitlab-ci\",\"commit\":\"$CI_COMMIT_SHORT_SHA\"}"'
