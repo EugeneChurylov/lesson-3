@@ -17,17 +17,22 @@ unit-tests:
     - python -c "print('smoke ok')"
 
 # ------------- retrain -------------
-retrain-model:
-  stage: train
+stages:
+  - retrain
+
+retrain:
+  stage: retrain
+  image: python:3.12-slim
+  before_script:
+    - python --version
+    - pip install --no-cache-dir -r requirements.txt
   script:
     - echo "Start retrain"
     - python model/train.py
-    - ls -lh model/
   artifacts:
-    when: always
     paths:
       - model/model.pkl
-    expire_in: 7 days
+    expire_in: 1 week
 
 # ------------- deploy / trigger -------------
 # ВАРІАНТ А: якщо хочеш викликати AWS Step Functions (опційно)
