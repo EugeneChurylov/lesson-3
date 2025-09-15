@@ -1,77 +1,97 @@
 stages:
-  - test
-  - train
+  - retrain
+  - build
   - deploy
 
-default:
-  image: python:3.12-slim
-  before_script:
-    - python --version
-    - pip install --no-cache-dir -r requirements.txt || true
-
-# ------------- tests -------------
-unit-tests:
-  stage: test
-  script:
-    - echo "No tests yet; add pytest later"
-    - python -c "print('smoke ok')"
-
-# ------------- retrain -------------
-stages:
-  - retrain
-
+# -----------------------------
+# 1) Retrain: створюємо model.pkl
+# -----------------------------
 retrain:
   stage: retrain
   image: python:3.12-slim
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   before_script:
     - python --version
     - pip install --no-cache-dir -r requirements.txt
   script:
     - echo "Start retrain"
     - python model/train.py
+    - test -f model/model.pkl
   artifacts:
+    name: "model-${CI_COMMIT_SHORT_SHA}"
     paths:
       - model/model.pkl
     expire_in: 1 week
 
-# ------------- deploy / trigger -------------
-# ВАРІАНТ А: якщо хочеш викликати AWS Step Functions (опційно)
+# -----------------------------------------
+# 2) (Опційно) Build & Push Docker образу
+#    Працює, якщо налаштовано реєстр:
+#    CI_REGISTRY, CI_REGISTRY_IMAGE, CI_REGISTRY_USER, CI_REGISTRY_PASSWORD
+# -----------------------------------------
+build_image:
+  stage: build
+  image: docker:24.0.9
+  services:
+    - name: docker:24.0.9-dind
+      command: ["--tls=false"]
+  variables:
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""     # вимикаємо TLS бо використовуємо --tls=false вище
+    IMAGE_TAG: "$CI_COMMIT_SHORT_SHA"
+    IMAGE_LATEST_TAG: "latest"
+  needs: ["retrain"]
+  rules:
+    # Запускаємо тільки на main і лише якщо задано реєстр (інакше job пропускається)
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_REGISTRY_IMAGE'
+      when: on_success
+    - when: never
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+  script:
+    - docker build -t "$CI_REGISTRY_IMAGE:$IMAGE_TAG" -t "$CI_REGISTRY_IMAGE:$IMAGE_LATEST_TAG" .
+    - docker push "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
+    - docker push "$CI_REGISTRY_IMAGE:$IMAGE_LATEST_TAG"
+  dependencies:
+    - retrain
+
+# ---------------------------------------------------
+# 3) (Опційно) Helm деплой
+#    Потрібні змінні:
+#      KUBE_CONFIG_B64  – base64 kubeconfig
+#      HELM_RELEASE     – назва релізу (наприклад: aiops-api)
+#      HELM_NAMESPACE   – namespace (наприклад: aiops)
+#    (Не обовʼязково) HELM_VALUES – шлях до values (за замовч: helm/values.yaml)
+# ---------------------------------------------------
 deploy:
   stage: deploy
+  image:
+    name: alpine/helm:3.14.2
+    entrypoint: [""]
+  needs:
+    - job: build_image
+      optional: true
+    - job: retrain
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "main" && $KUBE_CONFIG_B64 && $HELM_RELEASE && $HELM_NAMESPACE'
       when: on_success
-    - when: manual
+    - when: never
+  before_script:
+    # Відновлюємо kubeconfig з base64
+    - mkdir -p ~/.kube
+    - echo "$KUBE_CONFIG_B64" | base64 -d > ~/.kube/config
+    - kubectl version --client
+    - helm version
   script:
-    - pip install --no-cache-dir awscli==1.32.0
-    - echo "region=$AWS_DEFAULT_REGION sfn=$SFN_ARN sha=$CI_COMMIT_SHORT_SHA"
+    - export VALUES_PATH="${HELM_VALUES:-helm/values.yaml}"
+    # Якщо використовуєш імідж з попереднього кроку, можна прокинути тег через --set
     - |
-      if [ -n "$SFN_ARN" ]; then
-        aws stepfunctions start-execution \
-          --region "$AWS_DEFAULT_REGION" \
-          --state-machine-arn "$SFN_ARN" \
-          --name "train-$(date +%s)" \
-          --input "{\"source\":\"gitlab-ci\",\"commit\":\"$CI_COMMIT_SHORT_SHA\"}"
-      else
-        echo "SFN_ARN is empty -> skipping AWS Step Functions trigger"
-      fi
-
-# ---- ВАРІАНТ B (альтернативний): тригер іншого пайплайна GitLab (замість AWS) ----
-# trigger-retrain:
-#   stage: deploy
-#   rules:
-#     - if: '$CI_COMMIT_BRANCH == "main"'
-#       when: on_success
-#   image: curlimages/curl:8.8.0
-#   script:
-#     - |
-#       if [ -z "$TRIGGER_TOKEN" ] || [ -z "$PROJECT_ID" ]; then
-#         echo "TRIGGER_TOKEN/PROJECT_ID not set; skipping"
-#         exit 0
-#       fi
-#     - |
-#       curl -sS -X POST \
-#         -F token="$TRIGGER_TOKEN" \
-#         -F ref="main" \
-#         -F "variables[CAUSE]=drift" \
-#         "https://gitlab.com/api/v4/projects/${PROJECT_ID}/trigger/pipeline"
+      set -e
+      echo "Deploying $HELM_RELEASE into $HELM_NAMESPACE using $VALUES_PATH"
+      helm upgrade --install "$HELM_RELEASE" ./helm \
+        --namespace "$HELM_NAMESPACE" --create-namespace \
+        -f "$VALUES_PATH" \
+        ${CI_REGISTRY_IMAGE:+--set image.repository=$CI_REGISTRY_IMAGE} \
+        ${CI_COMMIT_SHORT_SHA:+--set image.tag=$CI_COMMIT_SHORT_SHA}
+    - kubectl -n "$HELM_NAMESPACE" get pods
