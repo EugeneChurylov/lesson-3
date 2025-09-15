@@ -164,3 +164,10 @@ def predict(req: PredictRequest, request: Request) -> PredictResponse:
     )
 
     return PredictResponse(prediction=y, drift=drift)
+
+
+@app.get("/metrics")
+def metrics() -> Response:
+    # Віддаємо всі метрики з дефолтного реєстру Prometheus client,
+    # включно з aiops_drift_events_total.
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
