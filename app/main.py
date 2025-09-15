@@ -14,6 +14,8 @@ from pydantic import BaseModel, Field, validator
 
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import Counter, Histogram
+from fastapi import Response
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 # ------------ Logging ------------
 logging.basicConfig(
