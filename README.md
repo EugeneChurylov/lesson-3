@@ -71,14 +71,33 @@ histogram_quantile(0.95, rate(aiops_prediction_latency_seconds_bucket[5m]))
 ---
 
 ## Скриншоти (для здачі ДЗ)
-1. `kubectl get pods -n aiops` — поди у статусі Running.  
-2. Виклик `/predict` з drift=false.  
-3. Виклик `/predict` з drift=true.  
-4. Loki Explore із `"drift": true`.  
-5. Метрики у Grafana (`aiops_predictions_total`, `aiops_drift_events_total`).  
-6. Графік latency у Grafana.  
-7. Лог GitLab CI із успішним retrain.  
-8. ArgoCD Application у статусі Healthy/Synced.
+## API
+![API](screenshots/API.png)
+
+## ArgoCD
+![Argo](screenshots/argo.png)
+
+## GitLab CI/CD
+![GitLab CI](screenshots/GitLab_CI.png)
+
+## Grafana Loki (логи)
+![Loki](screenshots/loki.png)
+
+## Grafana Loki (drift detected)
+![Loki drift](screenshots/loki_1.png)
+
+## Метрики (Prometheus/kubectl)
+![Pod](screenshots/pod.png)
+
+## Predict API
+![Predict API](screenshots/predict.png)
+
+## Prometheus metrics
+![Prometheus predictions](screenshots/prometheus.png)
+
+![Prometheus drift](screenshots/prometheus_1.png)
+
+![Prometheus local metrics](screenshots/prometheus_local.png)
 
 ---
 
