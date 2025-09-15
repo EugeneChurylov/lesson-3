@@ -21,8 +21,12 @@ retrain-model:
   stage: train
   script:
     - echo "Start retrain"
-    - python aiops-quality-project/model/train.py
+    - python model/train.py
+<<<<<<< .gitlab-ci.yml
     - ls -lh model/
+=======
+    - ls -lh model
+>>>>>>> .gitlab-ci.yml
   artifacts:
     when: always
     paths:
