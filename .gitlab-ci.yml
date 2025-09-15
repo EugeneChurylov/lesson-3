@@ -3,9 +3,6 @@ stages:
   - build
   - deploy
 
-# -----------------------------
-# 1) Retrain: створюємо model.pkl
-# -----------------------------
 retrain:
   stage: retrain
   image: python:3.12-slim
@@ -25,11 +22,6 @@ retrain:
       - model/model.pkl
     expire_in: 1 week
 
-# -----------------------------------------
-# 2) (Опційно) Build & Push Docker образу
-#    Працює, якщо налаштовано реєстр:
-#    CI_REGISTRY, CI_REGISTRY_IMAGE, CI_REGISTRY_USER, CI_REGISTRY_PASSWORD
-# -----------------------------------------
 build_image:
   stage: build
   image: docker:24.0.9
@@ -38,12 +30,11 @@ build_image:
       command: ["--tls=false"]
   variables:
     DOCKER_DRIVER: overlay2
-    DOCKER_TLS_CERTDIR: ""     # вимикаємо TLS бо використовуємо --tls=false вище
+    DOCKER_TLS_CERTDIR: ""
     IMAGE_TAG: "$CI_COMMIT_SHORT_SHA"
     IMAGE_LATEST_TAG: "latest"
   needs: ["retrain"]
   rules:
-    # Запускаємо тільки на main і лише якщо задано реєстр (інакше job пропускається)
     - if: '$CI_COMMIT_BRANCH == "main" && $CI_REGISTRY_IMAGE'
       when: on_success
     - when: never
@@ -56,14 +47,6 @@ build_image:
   dependencies:
     - retrain
 
-# ---------------------------------------------------
-# 3) (Опційно) Helm деплой
-#    Потрібні змінні:
-#      KUBE_CONFIG_B64  – base64 kubeconfig
-#      HELM_RELEASE     – назва релізу (наприклад: aiops-api)
-#      HELM_NAMESPACE   – namespace (наприклад: aiops)
-#    (Не обовʼязково) HELM_VALUES – шлях до values (за замовч: helm/values.yaml)
-# ---------------------------------------------------
 deploy:
   stage: deploy
   image:
@@ -78,14 +61,12 @@ deploy:
       when: on_success
     - when: never
   before_script:
-    # Відновлюємо kubeconfig з base64
     - mkdir -p ~/.kube
     - echo "$KUBE_CONFIG_B64" | base64 -d > ~/.kube/config
     - kubectl version --client
     - helm version
   script:
     - export VALUES_PATH="${HELM_VALUES:-helm/values.yaml}"
-    # Якщо використовуєш імідж з попереднього кроку, можна прокинути тег через --set
     - |
       set -e
       echo "Deploying $HELM_RELEASE into $HELM_NAMESPACE using $VALUES_PATH"
